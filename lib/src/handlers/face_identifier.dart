@@ -23,7 +23,9 @@ class FaceIdentifier {
     final face = await _detectFace(
         performanceMode: performanceMode,
         visionImage:
-            _inputImageFromCameraImage(cameraImage, controller, orientations));
+            _inputImageFromCameraImage(cameraImage, controller, orientations),
+        imageSize: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble())
+    );
     if (face != null) {
       result = face;
     }
@@ -90,7 +92,9 @@ class FaceIdentifier {
 
   static Future<DetectedFace?> _detectFace(
       {required InputImage? visionImage,
-      required FaceDetectorMode performanceMode}) async {
+      required FaceDetectorMode performanceMode,
+      required Size imageSize
+      }) async {
     if (visionImage == null) return null;
     final options = FaceDetectorOptions(
         enableLandmarks: true,
@@ -99,7 +103,7 @@ class FaceIdentifier {
     final faceDetector = FaceDetector(options: options);
     try {
       final List<Face> faces = await faceDetector.processImage(visionImage);
-      final faceDetect = _extractFace(faces, threshold: 0.4);
+      final faceDetect = _extractFace(faces, imageSize, threshold: 0.4, centerMargin: 0.4);
       return faceDetect;
     } catch (error) {
       debugPrint(error.toString());
@@ -107,100 +111,56 @@ class FaceIdentifier {
     }
   }
 
-  static _extractFace(List<Face> faces, {double threshold = 0.4, double centerMargin = 0.6}) {
-    //List<Rect> rect = [];
-    bool wellPositioned = faces.isNotEmpty;
-    Face? detectedFace;
-    Size? imageSize;
+  static DetectedFace? _extractFace(List<Face> faces, Size imageSize, {double threshold = 0.4, double centerMargin = 0.4}) {
+    if(faces.isEmpty) return null;
+    Face? bestFace;
+    double maxScore = 0.0;
 
     for (Face face in faces) {
-      // rect.add(face.boundingBox);
-      detectedFace = face;
 
-      // 얼굴 bounding box 크기 계산
       final Rect boundingBox = face.boundingBox;
       final double faceArea = boundingBox.width * boundingBox.height;
+      final double imageArea = imageSize.width * imageSize.height; // 대략적인 전체 이미지 크기 유추
 
-      print("faceArea------------ $faceArea");
-
-      // 이미지 전체 크기 (최초 감지된 얼굴의 크기로 설정)
-      imageSize ??= Size(boundingBox.width * 2, boundingBox.height * 2);
-      final double imageArea = imageSize.width * imageSize.height;
-
-      print("imageArea------------ $imageArea");
-      print("imageAreaThreshold------------ ${imageArea * threshold}");
-      print("faceArea > imageArea * threshold------------ ${faceArea < imageArea * threshold}");
-
-      // 얼굴이 화면의 일정 비율 이상인지 확인
-      if (faceArea < imageArea * threshold) {
-        wellPositioned = false;
-      }
+      print("faceArea: $faceArea");
+      print("imageArea: $imageArea");
+      print("imageArea * threshold: ${imageArea * threshold}");
+      // 1️⃣ 얼굴이 화면의 일정 비율 이상인지 확인 (크기 조건)
+      // bool isSizeOkay = (faceArea >= imageArea * threshold);
+      // if (!isSizeOkay) continue;
 
       // 2️⃣ 얼굴이 중앙에 위치하는지 확인
-      final double imageCenterX = imageSize.width / 2;
-      final double imageCenterY = imageSize.height / 2;
+      final double imageCenterX = boundingBox.width;
+      final double imageCenterY = boundingBox.height;
       final double faceCenterX = boundingBox.center.dx;
       final double faceCenterY = boundingBox.center.dy;
 
-      final double xMargin = imageSize.width * centerMargin;
-      final double yMargin = imageSize.height * centerMargin;
+      final double xMargin = boundingBox.width * centerMargin;
+      final double yMargin = boundingBox.height * centerMargin;
 
-      if (!(faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin &&
-          faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin)) {
-        wellPositioned = false;
-      }
+      bool isCentered = (faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin) &&
+          (faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin);
 
+      // 3️⃣ 머리 기울기 확인
+      bool isHeadStraight = (face.headEulerAngleY!.abs() <= 10) && (face.headEulerAngleZ!.abs() <= 10);
+      if (!isHeadStraight) continue;
 
-      // Head is rotated to the right rotY degrees
-      if (face.headEulerAngleY! > 5 || face.headEulerAngleY! < -5) {
-        wellPositioned = false;
-      }
+      // 4️⃣ 최적의 얼굴 선택 (크기 + 중앙 여부 고려)
+      double score = (faceArea / imageArea) + (isCentered ? 1.0 : 0.0); // 중앙에 있으면 점수 추가
 
-      // Head is tilted sideways rotZ degrees
-      if (face.headEulerAngleZ! > 5 || face.headEulerAngleZ! < -5) {
-        wellPositioned = false;
-      }
-
-      // If landmark detection was enabled with FaceDetectorOptions (mouth, ears,
-      // eyes, cheeks, and nose available):
-      final FaceLandmark? leftEar = face.landmarks[FaceLandmarkType.leftEar];
-      final FaceLandmark? rightEar = face.landmarks[FaceLandmarkType.rightEar];
-      final FaceLandmark? bottomMouth =
-          face.landmarks[FaceLandmarkType.bottomMouth];
-      final FaceLandmark? rightMouth =
-          face.landmarks[FaceLandmarkType.rightMouth];
-      final FaceLandmark? leftMouth =
-          face.landmarks[FaceLandmarkType.leftMouth];
-      final FaceLandmark? noseBase = face.landmarks[FaceLandmarkType.noseBase];
-      if (leftEar == null ||
-          rightEar == null ||
-          bottomMouth == null ||
-          rightMouth == null ||
-          leftMouth == null ||
-          noseBase == null) {
-        wellPositioned = false;
-      }
-
-      if (face.leftEyeOpenProbability != null) {
-        if (face.leftEyeOpenProbability! < 0.5) {
-          wellPositioned = false;
-        }
-      }
-
-      if (face.rightEyeOpenProbability != null) {
-        if (face.rightEyeOpenProbability! < 0.5) {
-          wellPositioned = false;
-        }
-      }
-
-      if (wellPositioned) {
-        break;
+      if (score > maxScore) {
+        maxScore = score;
+        bestFace = face;
       }
     }
 
+    if(bestFace == null) return null;
+
+    print("bestFace: $bestFace");
+
     return DetectedFace(
-      wellPositioned: wellPositioned,
-      face: detectedFace,
+      wellPositioned: true,
+      face: bestFace
     );
   }
 }

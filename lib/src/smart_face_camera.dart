@@ -147,25 +147,27 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                                           context,
                                           value.detectedFace,
                                           Size(
-                                            cameraController
-                                                .value.previewSize!.height,
-                                            cameraController
-                                                .value.previewSize!.width,
-                                          )) ??
-                                      CustomPaint(
-                                        painter: FacePainter(
-                                            face: value.detectedFace!.face,
-                                            indicatorShape:
-                                                widget.indicatorShape,
-                                            indicatorAssetImage:
-                                                widget.indicatorAssetImage,
-                                            imageSize: Size(
-                                              cameraController
-                                                  .value.previewSize!.height,
-                                              cameraController
-                                                  .value.previewSize!.width,
-                                            )),
-                                      ))
+                                                cameraController
+                                                    .value.previewSize!.height,
+                                                cameraController
+                                                    .value.previewSize!.width,
+                                              ))
+                                          ??
+                                          CustomPaint(
+                                            painter: FacePainter(
+                                                face: value.detectedFace!.face,
+                                                indicatorShape:
+                                                    widget.indicatorShape,
+                                                indicatorAssetImage:
+                                                    widget.indicatorAssetImage,
+                                                imageSize: Size(
+                                                  cameraController
+                                                      .value.previewSize!.height,
+                                                  cameraController
+                                                      .value.previewSize!.width,
+                                                )),
+                                          )
+                              )
                             ]
                           ],
                         ),

@@ -27,6 +27,8 @@ class FacePainter extends CustomPainter {
     // 크기 비율 계산
     scaleX = size.width / imageSize.width;
     scaleY = size.height / imageSize.height;
+
+
     final Rect boundingBox = face!.boundingBox;
     final double faceArea = boundingBox.width * boundingBox.height;
     final double imageArea = imageSize.width * imageSize.height;

@@ -27,7 +27,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     controller = FaceCameraController(
-      autoCapture: true,
+      autoCapture: false,
       defaultCameraLens: CameraLens.front,
       onCapture: (File? image) {
         setState(() => _capturedImage = image);
