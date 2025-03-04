@@ -8,32 +8,75 @@ class FacePainter extends CustomPainter {
       {required this.imageSize,
       this.face,
       required this.indicatorShape,
-      this.indicatorAssetImage});
+      this.indicatorAssetImage,
+      this.threshold = 0.2,
+      this.centerMargin = 0.6
+      });
   final Size imageSize;
   double? scaleX, scaleY;
   final Face? face;
   final IndicatorShape indicatorShape;
   final String? indicatorAssetImage;
+  final double threshold;
+  final double centerMargin;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (face == null) return;
 
-    Paint paint;
-
-    if (face!.headEulerAngleY! > 10 || face!.headEulerAngleY! < -10) {
-      paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0
-        ..color = Colors.red;
-    } else {
-      paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.0
-        ..color = Colors.green;
-    }
-
+    // 크기 비율 계산
     scaleX = size.width / imageSize.width;
     scaleY = size.height / imageSize.height;
+    final Rect boundingBox = face!.boundingBox;
+    final double faceArea = boundingBox.width * boundingBox.height;
+    final double imageArea = imageSize.width * imageSize.height;
+
+    // 얼굴이 화면의 일정 비율 이상인지 확인
+    bool isSizeOkay = (faceArea >= imageArea * threshold);
+
+    // 얼굴이 중앙에 위치하는지 확인
+    final double imageCenterX = imageSize.width / 2;
+    final double imageCenterY = imageSize.height / 2;
+    final double faceCenterX = boundingBox.center.dx;
+    final double faceCenterY = boundingBox.center.dy;
+
+    final double xMargin = imageSize.width * centerMargin;
+    final double yMargin = imageSize.height * centerMargin;
+
+    bool isCentered = (faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin) &&
+        (faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin);
+
+    // 머리 기울기 확인
+    bool isHeadStraight = (face!.headEulerAngleY!.abs() <= 10) && (face!.headEulerAngleZ!.abs() <= 10);
+
+    // 최종 조건 체크
+    bool isWellPositioned = isSizeOkay && isCentered && isHeadStraight;
+
+    print("isSizeOkay: $isSizeOkay");
+    print("isCentered: $isCentered");
+    print("isHeadStraight: $isHeadStraight");
+
+    // 색상 결정
+    Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.0
+      ..color = isWellPositioned ? Colors.green : Colors.red;
+
+    // Paint paint;
+    // if (face!.headEulerAngleY! > 10 || face!.headEulerAngleY! < -10) {
+    //   paint = Paint()
+    //     ..style = PaintingStyle.stroke
+    //     ..strokeWidth = 3.0
+    //     ..color = Colors.red;
+    // } else {
+    //   paint = Paint()
+    //     ..style = PaintingStyle.stroke
+    //     ..strokeWidth = 3.0
+    //     ..color = Colors.green;
+    // }
+    //
+    // scaleX = size.width / imageSize.width;
+    // scaleY = size.height / imageSize.height;
 
     switch (indicatorShape) {
       case IndicatorShape.defaultShape:

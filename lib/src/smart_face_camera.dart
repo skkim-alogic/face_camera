@@ -219,19 +219,25 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
   Widget _cameraDisplayWidget(FaceCameraState value) {
     final CameraController? cameraController = value.cameraController;
     if (cameraController != null && cameraController.value.isInitialized) {
-      return CameraPreview(cameraController, child: Builder(builder: (context) {
-        if (widget.messageBuilder != null) {
-          return widget.messageBuilder!.call(context, value.detectedFace);
-        }
-        if (widget.message != null) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 55, vertical: 15),
-            child: Text(widget.message!,
-                textAlign: TextAlign.center, style: widget.messageStyle),
-          );
-        }
-        return const SizedBox.shrink();
-      }));
+      return Transform.flip(
+        flipX:true,
+        child: CameraPreview(cameraController, child: Transform.flip(
+          flipX: true,
+          child: Builder(builder: (context) {
+            if (widget.messageBuilder != null) {
+              return widget.messageBuilder!.call(context, value.detectedFace);
+            }
+            if (widget.message != null) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 55, vertical: 15),
+                child: Text(widget.message!,
+                    textAlign: TextAlign.center, style: widget.messageStyle),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+        )),
+      );
     }
     return const SizedBox.shrink();
   }

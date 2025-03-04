@@ -99,7 +99,7 @@ class FaceIdentifier {
     final faceDetector = FaceDetector(options: options);
     try {
       final List<Face> faces = await faceDetector.processImage(visionImage);
-      final faceDetect = _extractFace(faces);
+      final faceDetect = _extractFace(faces, threshold: 0.4);
       return faceDetect;
     } catch (error) {
       debugPrint(error.toString());
@@ -107,14 +107,49 @@ class FaceIdentifier {
     }
   }
 
-  static _extractFace(List<Face> faces) {
+  static _extractFace(List<Face> faces, {double threshold = 0.4, double centerMargin = 0.6}) {
     //List<Rect> rect = [];
     bool wellPositioned = faces.isNotEmpty;
     Face? detectedFace;
+    Size? imageSize;
 
     for (Face face in faces) {
       // rect.add(face.boundingBox);
       detectedFace = face;
+
+      // 얼굴 bounding box 크기 계산
+      final Rect boundingBox = face.boundingBox;
+      final double faceArea = boundingBox.width * boundingBox.height;
+
+      print("faceArea------------ $faceArea");
+
+      // 이미지 전체 크기 (최초 감지된 얼굴의 크기로 설정)
+      imageSize ??= Size(boundingBox.width * 2, boundingBox.height * 2);
+      final double imageArea = imageSize.width * imageSize.height;
+
+      print("imageArea------------ $imageArea");
+      print("imageAreaThreshold------------ ${imageArea * threshold}");
+      print("faceArea > imageArea * threshold------------ ${faceArea < imageArea * threshold}");
+
+      // 얼굴이 화면의 일정 비율 이상인지 확인
+      if (faceArea < imageArea * threshold) {
+        wellPositioned = false;
+      }
+
+      // 2️⃣ 얼굴이 중앙에 위치하는지 확인
+      final double imageCenterX = imageSize.width / 2;
+      final double imageCenterY = imageSize.height / 2;
+      final double faceCenterX = boundingBox.center.dx;
+      final double faceCenterY = boundingBox.center.dy;
+
+      final double xMargin = imageSize.width * centerMargin;
+      final double yMargin = imageSize.height * centerMargin;
+
+      if (!(faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin &&
+          faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin)) {
+        wellPositioned = false;
+      }
+
 
       // Head is rotated to the right rotY degrees
       if (face.headEulerAngleY! > 5 || face.headEulerAngleY! < -5) {
