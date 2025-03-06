@@ -11,7 +11,10 @@ class FaceIdentifier {
   static Future<DetectedFace?> scanImage(
       {required CameraImage cameraImage,
       required CameraController? controller,
-      required FaceDetectorMode performanceMode}) async {
+      required FaceDetectorMode performanceMode,
+      double? threshold,
+      double? centerMargin
+      }) async {
     final orientations = {
       DeviceOrientation.portraitUp: 0,
       DeviceOrientation.landscapeLeft: 90,
@@ -24,7 +27,9 @@ class FaceIdentifier {
         performanceMode: performanceMode,
         visionImage:
             _inputImageFromCameraImage(cameraImage, controller, orientations),
-        imageSize: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble())
+        imageSize: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble()),
+        threshold: threshold,
+        centerMargin: threshold
     );
     if (face != null) {
       result = face;
@@ -93,7 +98,9 @@ class FaceIdentifier {
   static Future<DetectedFace?> _detectFace(
       {required InputImage? visionImage,
       required FaceDetectorMode performanceMode,
-      required Size imageSize
+      required Size imageSize,
+      double? threshold,
+      double? centerMargin
       }) async {
     if (visionImage == null) return null;
     final options = FaceDetectorOptions(
@@ -103,7 +110,7 @@ class FaceIdentifier {
     final faceDetector = FaceDetector(options: options);
     try {
       final List<Face> faces = await faceDetector.processImage(visionImage);
-      final faceDetect = _extractFace(faces, imageSize, threshold: 0.1, centerMargin: 0.4);
+      final faceDetect = _extractFace(faces, imageSize, threshold: threshold ?? 0.1, centerMargin: centerMargin ?? 0.4);
       return faceDetect;
     } catch (error) {
       debugPrint(error.toString());
@@ -118,6 +125,8 @@ class FaceIdentifier {
     bool wellPositioned = false;
 
     for (Face face in faces) {
+
+      if(!hasAllLandmarks(face)) continue;
 
       final Rect boundingBox = face.boundingBox;
       final double faceArea = boundingBox.width * boundingBox.height;
@@ -163,5 +172,13 @@ class FaceIdentifier {
       wellPositioned: true,
       face: bestFace
     );
+  }
+
+  static bool hasAllLandmarks(Face face) {
+    return face.landmarks.containsKey(FaceLandmarkType.leftEye) &&
+        face.landmarks.containsKey(FaceLandmarkType.rightEye) &&
+        face.landmarks.containsKey(FaceLandmarkType.noseBase) &&
+        face.landmarks.containsKey(FaceLandmarkType.leftMouth) &&
+        face.landmarks.containsKey(FaceLandmarkType.rightMouth);
   }
 }

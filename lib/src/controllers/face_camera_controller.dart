@@ -25,6 +25,8 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     required this.onCapture,
     this.onFaceDetected,
     this.onFaceDetecting,
+    this.threshold = 0.1,
+    this.centerMargin = 0.4,
   }) : super(FaceCameraState.uninitialized());
 
   /// The desired resolution for the camera.
@@ -58,6 +60,10 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
   final void Function(Face? face)? onFaceDetected;
 
   final void Function(Face? face)? onFaceDetecting;
+
+  final double? threshold;
+
+  final double? centerMargin;
 
   /// Gets all available camera lens and set current len
   void _getAllAvailableCameraLens() {
@@ -193,7 +199,10 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
         await FaceIdentifier.scanImage(
                 cameraImage: cameraImage,
                 controller: cameraController,
-                performanceMode: performanceMode)
+                performanceMode: performanceMode,
+                threshold: threshold,
+                centerMargin: centerMargin
+        )
             .then((result) async {
           value = value.copyWith(detectedFace: result);
 
