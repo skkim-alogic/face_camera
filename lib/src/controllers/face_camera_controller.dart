@@ -24,6 +24,7 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     this.performanceMode = FaceDetectorMode.fast,
     required this.onCapture,
     this.onFaceDetected,
+    this.onFaceDetecting,
   }) : super(FaceCameraState.uninitialized());
 
   /// The desired resolution for the camera.
@@ -55,6 +56,8 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
 
   /// Callback invoked when camera detects face.
   final void Function(Face? face)? onFaceDetected;
+
+  final void Function(Face? face)? onFaceDetecting;
 
   /// Gets all available camera lens and set current len
   void _getAllAvailableCameraLens() {
@@ -193,6 +196,8 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
                 performanceMode: performanceMode)
             .then((result) async {
           value = value.copyWith(detectedFace: result);
+
+          onFaceDetecting?.call(result?.face);
 
           if (result != null) {
             try {
