@@ -9,8 +9,8 @@ class FacePainter extends CustomPainter {
       this.face,
       required this.indicatorShape,
       this.indicatorAssetImage,
-      this.threshold = 0.2,
-      this.centerMargin = 0.6
+      this.threshold = 0.1,
+      this.centerMargin = 0.4
       });
   final Size imageSize;
   double? scaleX, scaleY;
