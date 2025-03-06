@@ -175,10 +175,15 @@ class FaceIdentifier {
   }
 
   static bool hasAllLandmarks(Face face) {
-    return face.landmarks.containsKey(FaceLandmarkType.leftEye) &&
-        face.landmarks.containsKey(FaceLandmarkType.rightEye) &&
-        face.landmarks.containsKey(FaceLandmarkType.noseBase) &&
-        face.landmarks.containsKey(FaceLandmarkType.leftMouth) &&
-        face.landmarks.containsKey(FaceLandmarkType.rightMouth);
+    // return face.landmarks.containsKey(FaceLandmarkType.leftEye) &&
+    //     face.landmarks.containsKey(FaceLandmarkType.rightEye) &&
+    //     face.landmarks.containsKey(FaceLandmarkType.noseBase) &&
+    //     face.landmarks.containsKey(FaceLandmarkType.leftMouth) &&
+    //     face.landmarks.containsKey(FaceLandmarkType.rightMouth);
+    return face.landmarks[FaceLandmarkType.leftEye] != null &&
+        face.landmarks[FaceLandmarkType.rightEye] != null &&
+        face.landmarks[FaceLandmarkType.noseBase] != null &&
+        face.landmarks[FaceLandmarkType.leftMouth] != null &&
+        face.landmarks[FaceLandmarkType.rightMouth] != null;
   }
 }
