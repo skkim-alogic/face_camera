@@ -53,6 +53,9 @@ class SmartFaceCamera extends StatefulWidget {
   /// The controller for the [SmartFaceCamera] widget.
   final FaceCameraController controller;
 
+  /// Set true to hide the face painter.
+  final bool hideFacePainter;
+
   const SmartFaceCamera(
       {required this.controller,
       this.showControls = true,
@@ -70,6 +73,7 @@ class SmartFaceCamera extends StatefulWidget {
       this.indicatorAssetImage,
       this.indicatorBuilder,
       this.autoDisableCaptureControl = false,
+      this.hideFacePainter = false,
       Key? key})
       : assert(
             indicatorShape != IndicatorShape.image ||
@@ -152,8 +156,9 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                                                 cameraController
                                                     .value.previewSize!.width,
                                               ))
-                                          ??
-                                          CustomPaint(
+                                          ?? (widget.hideFacePainter == true
+                                              ? const SizedBox.shrink()
+                                              : CustomPaint(
                                             painter: FacePainter(
                                                 face: value.detectedFace!.face,
                                                 indicatorShape:
@@ -166,7 +171,7 @@ class _SmartFaceCameraState extends State<SmartFaceCamera>
                                                   cameraController
                                                       .value.previewSize!.width,
                                                 )),
-                                          )
+                                          ))
                               )
                             ]
                           ],
