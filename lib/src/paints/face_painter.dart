@@ -37,13 +37,13 @@ class FacePainter extends CustomPainter {
     bool isSizeOkay = (faceArea >= imageArea * threshold);
 
     // 얼굴이 중앙에 위치하는지 확인
-    final double imageCenterX = imageSize.width / 2;
-    final double imageCenterY = imageSize.height / 2;
+    final double imageCenterX = boundingBox.width;
+    final double imageCenterY = boundingBox.height;
     final double faceCenterX = boundingBox.center.dx;
     final double faceCenterY = boundingBox.center.dy;
 
-    final double xMargin = imageSize.width * centerMargin;
-    final double yMargin = imageSize.height * centerMargin;
+    final double xMargin = boundingBox.width * centerMargin;
+    final double yMargin = boundingBox.height * centerMargin;
 
     bool isCentered = (faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin) &&
         (faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin);
@@ -53,10 +53,6 @@ class FacePainter extends CustomPainter {
 
     // 최종 조건 체크
     bool isWellPositioned = isSizeOkay && isCentered && isHeadStraight;
-
-    print("isSizeOkay: $isSizeOkay");
-    print("isCentered: $isCentered");
-    print("isHeadStraight: $isHeadStraight");
 
     // 색상 결정
     Paint paint = Paint()
