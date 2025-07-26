@@ -19,7 +19,10 @@ class FaceCamera {
     /// Fetch the available cameras before initializing the app.
     try {
       _cameras = await availableCameras();
+      print("Available cameras: ${_cameras.length}");
+      print("${_cameras.map((c) => c.name).join(', ')}");
     } on CameraException catch (e) {
+      print("Error fetching cameras: ${e.code} - ${e.description}");
       logError(e.code, e.description);
     }
   }
