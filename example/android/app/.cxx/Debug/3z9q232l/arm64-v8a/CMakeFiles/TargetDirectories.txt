@@ -1,0 +1,2 @@
+/Users/sunkyumkim/dev/flutterProject/face_camera/example/android/app/.cxx/Debug/3z9q232l/arm64-v8a/CMakeFiles/edit_cache.dir
+/Users/sunkyumkim/dev/flutterProject/face_camera/example/android/app/.cxx/Debug/3z9q232l/arm64-v8a/CMakeFiles/rebuild_cache.dir
