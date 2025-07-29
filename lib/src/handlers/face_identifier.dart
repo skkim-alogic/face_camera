@@ -12,6 +12,7 @@ class FaceIdentifier {
       {required CameraImage cameraImage,
       required CameraController? controller,
       required FaceDetectorMode performanceMode,
+      double? faceSizeThreshold,
       double? centerMargin
       }) async {
     final orientations = {
@@ -27,6 +28,7 @@ class FaceIdentifier {
         visionImage:
             _inputImageFromCameraImage(cameraImage, controller, orientations),
         imageSize: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble()),
+        threshold: faceSizeThreshold,
         centerMargin: centerMargin
     );
     if (face != null) {
@@ -97,19 +99,19 @@ class FaceIdentifier {
       {required InputImage? visionImage,
       required FaceDetectorMode performanceMode,
       required Size imageSize,
+      double? threshold,
       double? centerMargin
       }) async {
     if (visionImage == null) return null;
     final options = FaceDetectorOptions(
         enableLandmarks: true,
         enableTracking: true,
-        minFaceSize: 0.3,
         enableClassification: true,
         performanceMode: performanceMode);
     final faceDetector = FaceDetector(options: options);
     try {
       final List<Face> faces = await faceDetector.processImage(visionImage);
-      final faceDetect = _extractFace(faces, imageSize, centerMargin: centerMargin ?? 0.4);
+      final faceDetect = _extractFace(faces, imageSize, threshold: threshold ?? 0.1, centerMargin: centerMargin ?? 0.4);
       return faceDetect;
     } catch (error) {
       debugPrint(error.toString());
@@ -117,7 +119,7 @@ class FaceIdentifier {
     }
   }
 
-  static DetectedFace? _extractFace(List<Face> faces, Size imageSize, {double centerMargin = 0.4}) {
+  static DetectedFace? _extractFace(List<Face> faces, Size imageSize, {double threshold = 0.1, double centerMargin = 0.4}) {
     if(faces.isEmpty) return null;
     Face? bestFace;
     double maxScore = 0.0;
@@ -130,6 +132,10 @@ class FaceIdentifier {
       final Rect boundingBox = face.boundingBox;
       final double faceArea = boundingBox.width * boundingBox.height;
       final double imageArea = imageSize.width * imageSize.height; // 대략적인 전체 이미지 크기 유추
+
+      // 1️⃣ 얼굴이 화면의 일정 비율 이상인지 확인 (크기 조건)
+      bool isSizeOkay = (faceArea >= imageArea * threshold);
+      if (!isSizeOkay) continue;
 
       // 2️⃣ 얼굴이 중앙에 위치하는지 확인
       final double imageCenterX = imageSize.height/2;

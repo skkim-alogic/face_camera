@@ -25,7 +25,7 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     required this.onCapture,
     this.onFaceDetected,
     this.onFaceDetecting,
-    this.threshold = 0.1,
+    this.faceSizeThreshold = 0.1,
     this.centerMargin = 0.4,
   }) : super(FaceCameraState.uninitialized());
 
@@ -61,7 +61,7 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
 
   final void Function(Face? face)? onFaceDetecting;
 
-  final double? threshold;
+  final double? faceSizeThreshold;
 
   final double? centerMargin;
 
@@ -200,6 +200,7 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
                 cameraImage: cameraImage,
                 controller: cameraController,
                 performanceMode: performanceMode,
+                faceSizeThreshold: faceSizeThreshold,
                 centerMargin: centerMargin
         )
             .then((result) async {
