@@ -137,8 +137,8 @@ class FaceIdentifier {
       if (!isSizeOkay) continue;
 
       // 2️⃣ 얼굴이 중앙에 위치하는지 확인
-      final double imageCenterX = imageSize.width/2;
-      final double imageCenterY = imageSize.height/2;
+      final double imageCenterX = imageSize.height/2;
+      final double imageCenterY = imageSize.width/2;
       final double faceCenterX = boundingBox.center.dx;
       final double faceCenterY = boundingBox.center.dy;
 
