@@ -137,13 +137,16 @@ class FaceIdentifier {
       if (!isSizeOkay) continue;
 
       // 2️⃣ 얼굴이 중앙에 위치하는지 확인
-      final double imageCenterX = boundingBox.width;
-      final double imageCenterY = boundingBox.height;
+      final double imageCenterX = imageSize.width/2;
+      final double imageCenterY = imageSize.height/2;
       final double faceCenterX = boundingBox.center.dx;
       final double faceCenterY = boundingBox.center.dy;
 
-      final double xMargin = boundingBox.width * centerMargin;
-      final double yMargin = boundingBox.height * centerMargin;
+      final double xMargin = imageSize.width * centerMargin;
+      final double yMargin = imageSize.height * centerMargin;
+
+      print("중심 - X: $imageCenterX, Y: $imageCenterY");
+      print("얼굴 - X: $faceCenterX, Y: $faceCenterY");
 
       bool isCentered = (faceCenterX >= imageCenterX - xMargin && faceCenterX <= imageCenterX + xMargin) &&
           (faceCenterY >= imageCenterY - yMargin && faceCenterY <= imageCenterY + yMargin);
@@ -166,10 +169,14 @@ class FaceIdentifier {
 
     if(bestFace == null) return null;
 
+    if(wellPositioned == false) {
+      return null;
+    }
+
     print("bestFace(Ok): $bestFace");
 
     return DetectedFace(
-      wellPositioned: true,
+      wellPositioned: wellPositioned,
       face: bestFace
     );
   }
