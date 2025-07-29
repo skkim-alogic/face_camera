@@ -200,7 +200,6 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
                 cameraImage: cameraImage,
                 controller: cameraController,
                 performanceMode: performanceMode,
-                threshold: threshold,
                 centerMargin: centerMargin
         )
             .then((result) async {
