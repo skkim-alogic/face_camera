@@ -191,14 +191,44 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     }
   }
 
-  double _calculateLuminance(CameraImage image) {
-    // YUV 포맷 기준 luminance 계산 (성능 최적화)
+  double _calculateLuminance(CameraImage image, Rect? faceRect) {
+    // // YUV 포맷 기준 luminance 계산 (성능 최적화)
+    // final yPlane = image.planes[0].bytes;
+    // double sum = 0;
+    // for (int i = 0; i < yPlane.length; i += 2) {
+    //   sum += yPlane[i].toDouble();
+    // }
+    // return sum / (yPlane.length ~/ 2);
+    if (faceRect == null) return 0;
+
     final yPlane = image.planes[0].bytes;
+    final width = image.width;
+    final height = image.height;
+
+    // YUV420에서 Y 채널의 stride 고려
+    final yStride = image.planes[0].bytesPerRow;
+
+    // 얼굴 영역 좌표 변환 (정규화 → 픽셀 단위)
+    final x = (faceRect.left * width).toInt().clamp(0, width-1);
+    final y = (faceRect.top * height).toInt().clamp(0, height-1);
+    final w = (faceRect.width * width).toInt().clamp(1, width-x);
+    final h = (faceRect.height * height).toInt().clamp(1, height-y);
+
     double sum = 0;
-    for (int i = 0; i < yPlane.length; i += 2) {
-      sum += yPlane[i].toDouble();
+    int pixelCount = 0;
+
+    // 얼굴 영역만 순회 (성능을 위해 stride=2)
+    for (int row = y; row < y + h; row += 2) {
+      for (int col = x; col < x + w; col += 2) {
+        final pos = row * yStride + col;
+        if (pos < yPlane.length) {
+          sum += yPlane[pos].toDouble();
+          pixelCount++;
+        }
+      }
     }
-    return sum / (yPlane.length ~/ 2);
+
+    return pixelCount > 0 ? sum / pixelCount : 0;
   }
 
   void _processImage(CameraImage cameraImage) async {
