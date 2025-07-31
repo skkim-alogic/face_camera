@@ -59,7 +59,7 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
   /// Callback invoked when camera detects face.
   final void Function(Face? face)? onFaceDetected;
 
-  final void Function(Face? face)? onFaceDetecting;
+  final void Function(Face? face, double luminance)? onFaceDetecting;
 
   final double? faceSizeThreshold;
 
@@ -191,6 +191,16 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     }
   }
 
+  double _calculateLuminance(CameraImage image) {
+    // YUV 포맷 기준 luminance 계산 (성능 최적화)
+    final yPlane = image.planes[0].bytes;
+    double sum = 0;
+    for (int i = 0; i < yPlane.length; i += 2) {
+      sum += yPlane[i].toDouble();
+    }
+    return sum / (yPlane.length ~/ 2);
+  }
+
   void _processImage(CameraImage cameraImage) async {
     final CameraController? cameraController = value.cameraController;
     if (!value.alreadyCheckingImage) {
@@ -206,7 +216,10 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
             .then((result) async {
           value = value.copyWith(detectedFace: result);
 
-          onFaceDetecting?.call(result?.face);
+
+          final luminance = _calculateLuminance(cameraImage);
+
+          onFaceDetecting?.call(result?.face, luminance);
 
           if (result != null) {
             try {
