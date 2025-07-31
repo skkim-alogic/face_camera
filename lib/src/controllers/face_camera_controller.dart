@@ -192,8 +192,8 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     }
   }
 
-  double _calculateLuminance(CameraImage image, Rect? faceRect, Map<FaceLandmarkType, FaceLandmark?>? landmarks) {
-    if(faceRect == null || landmarks == null) {
+  double _calculateLuminance(CameraImage image, Face? face) {
+    if(face == null) {
       //YUV 포맷 기준 luminance 계산 (성능 최적화)
       final yPlane = image.planes[0].bytes;
       double sum = 0;
@@ -203,45 +203,28 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
       return sum / (yPlane.length ~/ 2);
     }
 
-      Rect _getNoseRegion(Rect faceRect, math.Point<int> noseTip, {double sizeRatio = 0.15}) {
-        // 코를 중심으로 얼굴 너비의 15% 영역 설정
-        final noseSize = faceRect.width * sizeRatio;
-        return Rect.fromCenter(
-          center: Offset(noseTip.x.toDouble(), noseTip.y.toDouble()),
-          width: noseSize,
-          height: noseSize,
-        );
-      }
 
-      // 랜드마크에서 코 끝 추출
-      math.Point<int>? _getNoseTip(Map<FaceLandmarkType, FaceLandmark?> landmarks) {
-        final noseLandmark = landmarks[FaceLandmarkType.noseBase];
-        return noseLandmark?.position is math.Point<int>
-            ? noseLandmark!.position
-            : null;
-      }
+    debugPrint('Calculating luminance for face rect: ${face.boundingBox.center}');
 
-    final noseTip = _getNoseTip(landmarks!);
-    if (noseTip == null) return 0;
-
-    final noseRect = _getNoseRegion(faceRect, noseTip);
     final yPlane = image.planes[0].bytes;
-    final yStride = image.planes[0].bytesPerRow;
-    final width = image.width;
-    final height = image.height;
 
-    // 정규화 좌표 → 픽셀 좌표 변환
-    final x = (noseRect.left * width).toInt().clamp(0, width-1);
-    final y = (noseRect.top * height).toInt().clamp(0, height-1);
-    final w = (noseRect.width * width).toInt().clamp(1, width-x);
-    final h = (noseRect.height * height).toInt().clamp(1, height-y);
+    // YUV420에서 Y 채널의 stride 고려
+    final yStride = image.planes[0].bytesPerRow;
+
+    final faceRect = face.boundingBox;
+
+    // 얼굴 영역 좌표 변환 (정규화 → 픽셀 단위)
+    final x = face.boundingBox.left.toInt().clamp(0, image.width-1);
+    final y = face.boundingBox.top.toInt().clamp(0, image.height-1);
+    final w = face.boundingBox.width.toInt().clamp(1, image.width-x);
+    final h = face.boundingBox.height.toInt().clamp(1, image.height-y);
 
     double sum = 0;
     int pixelCount = 0;
 
-    // 코 영역 순회 (모든 픽셀 분석)
-    for (int row = y; row < y + h; row++) {
-      for (int col = x; col < x + w; col++) {
+    // 얼굴 영역만 순회 (성능을 위해 stride=2)
+    for (int row = y; row < y + h; row += 2) {
+      for (int col = x; col < x + w; col += 2) {
         final pos = row * yStride + col;
         if (pos < yPlane.length) {
           sum += yPlane[pos].toDouble();
@@ -251,37 +234,6 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
     }
 
     return pixelCount > 0 ? sum / pixelCount : 0;
-
-    // debugPrint('Calculating luminance for face rect: $faceRect');
-    //
-    // final yPlane = image.planes[0].bytes;
-    // final width = image.width;
-    // final height = image.height;
-    //
-    // // YUV420에서 Y 채널의 stride 고려
-    // final yStride = image.planes[0].bytesPerRow;
-    //
-    // // 얼굴 영역 좌표 변환 (정규화 → 픽셀 단위)
-    // final x = (faceRect.left * width).toInt().clamp(0, width-1);
-    // final y = (faceRect.top * height).toInt().clamp(0, height-1);
-    // final w = (faceRect.width * width).toInt().clamp(1, width-x);
-    // final h = (faceRect.height * height).toInt().clamp(1, height-y);
-    //
-    // double sum = 0;
-    // int pixelCount = 0;
-    //
-    // // 얼굴 영역만 순회 (성능을 위해 stride=2)
-    // for (int row = y; row < y + h; row += 2) {
-    //   for (int col = x; col < x + w; col += 2) {
-    //     final pos = row * yStride + col;
-    //     if (pos < yPlane.length) {
-    //       sum += yPlane[pos].toDouble();
-    //       pixelCount++;
-    //     }
-    //   }
-    // }
-    //
-    // return pixelCount > 0 ? sum / pixelCount : 0;
   }
 
   void _processImage(CameraImage cameraImage) async {
@@ -300,9 +252,9 @@ class FaceCameraController extends ValueNotifier<FaceCameraState> {
           value = value.copyWith(detectedFace: result);
 
 
-          final frameLuminance = _calculateLuminance(cameraImage, null, null);
+          final frameLuminance = _calculateLuminance(cameraImage, null);
 
-          final faceLuminance = _calculateLuminance(cameraImage, result?.face?.boundingBox, result?.face?.landmarks);
+          final faceLuminance = _calculateLuminance(cameraImage, result?.face);
 
           onFaceDetecting?.call(result?.face, faceLuminance, frameLuminance);
 
